@@ -1,6 +1,6 @@
 # Main Street Muncher
 
-Turn any OpenStreetMap neighborhood into a playable street maze. Zoom to a dense grid, press **Play**, and control an Ikarus 260 bus on the streets you selected. Collect the dots and dodge the traffic cones. Based off the 2015/17 Google Maps April Fools' Pac-Man pranks.
+Turn any OpenStreetMap neighborhood into a playable street maze. Zoom to a dense grid, press **Play**, then control an Ikarus 260 bus on the streets you selected. Collect the dots and dodge the traffic cones. Based off the 2015/17 Google Maps April Fools' Pac-Man pranks.
 
 ## How to play
 
