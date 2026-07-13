@@ -13,10 +13,10 @@ const CHASER_META: Record<
   ChaserRole,
   { color: string; scatterCorner: "ne" | "nw" | "se" | "sw" }
 > = {
-  rusher: { color: "#e74c3c", scatterCorner: "ne" },
-  sneaker: { color: "#e91e8c", scatterCorner: "nw" },
-  trickster: { color: "#1abc9c", scatterCorner: "se" },
-  loafer: { color: "#e67e22", scatterCorner: "sw" },
+  rusher: { color: "#f06020", scatterCorner: "ne" },
+  sneaker: { color: "#e85818", scatterCorner: "nw" },
+  trickster: { color: "#ff7a3d", scatterCorner: "se" },
+  loafer: { color: "#d45010", scatterCorner: "sw" },
 };
 
 function cornerNode(
@@ -187,6 +187,8 @@ export function updateChaser(
 export function resetChasers(maze: MazeGraph, chasers: Chaser[]): void {
   const fresh = createChasers(maze);
   for (let i = 0; i < chasers.length; i++) {
+    // Eaten-for-good chasers stay gone
+    if (chasers[i]!.state === "gone") continue;
     chasers[i]!.pose = fresh[i]!.pose;
     chasers[i]!.state = "scatter";
   }
@@ -194,7 +196,8 @@ export function resetChasers(maze: MazeGraph, chasers: Chaser[]): void {
 
 export function frightenChasers(chasers: Chaser[]): void {
   for (const g of chasers) {
-    if (g.state !== "eaten") g.state = "frightened";
+    if (g.state === "gone" || g.state === "eaten") continue;
+    g.state = "frightened";
   }
 }
 

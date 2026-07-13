@@ -4,10 +4,33 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Street Dots</title>
+    <title>Main Street Muncher</title>
   </head>
   <body>
-    <div id="app">
+    <div id="splash">
+      <div class="splash-glow" aria-hidden="true"></div>
+      <h1 class="neon-title" data-text="Main Street Muncher">Main Street Muncher</h1>
+      <p class="splash-tagline">Drive an Ikarus 260. Munch the green dots. Dodge the cones.</p>
+      <div class="splash-actions">
+        <button type="button" id="splash-play" class="neon-btn">Play</button>
+        <button type="button" id="splash-about" class="neon-btn neon-btn-ghost">About</button>
+      </div>
+      <section id="about-panel" class="about-panel hidden" aria-live="polite">
+        <h2>About</h2>
+        <p>
+          Main Street Muncher turns real OpenStreetMap streets into a bite-sized maze.
+          Zoom into a few city blocks, press the bus button, and ride the routes —
+          collecting lime dots while construction cones try to catch you.
+        </p>
+        <p>
+          Street ends wrap to the far side so every road stays clearable.
+          Power dots let you flatten cones for good. Arrow keys or WASD to steer.
+        </p>
+        <p class="about-credit">Map data © OpenStreetMap contributors. Not affiliated with BKK or Ikarus.</p>
+      </section>
+    </div>
+
+    <div id="app" class="hidden">
       <header id="hud" class="hidden" aria-live="polite">
         <div id="hud-left">
           <span id="hud-score">Score: 0</span>
@@ -31,15 +54,19 @@
             />
             <button type="submit" id="search-btn">Go</button>
           </form>
-          <p id="hint">Find a street grid, then press Play</p>
+          <p id="hint">Zoom to a few blocks, then press the bus to munch</p>
         </header>
 
         <div id="toast" class="hidden" role="status"></div>
 
-        <button type="button" id="play-fab" title="Play on these streets" aria-label="Start Street Dots">
-          <svg viewBox="0 0 64 64" width="40" height="40" aria-hidden="true">
-            <circle cx="32" cy="32" r="28" fill="#121a2e" />
-            <path d="M44 32 L22 44 L28 32 L22 20 Z" fill="#ffd400" stroke="#1a1400" stroke-width="2" stroke-linejoin="round"/>
+        <button type="button" id="play-fab" title="Munch these streets" aria-label="Start Main Street Muncher">
+          <svg viewBox="0 0 64 64" width="44" height="44" aria-hidden="true">
+            <rect x="8" y="18" width="48" height="28" rx="2" fill="#1a3a7a"/>
+            <rect x="8" y="18" width="48" height="12" fill="#c5ccd4"/>
+            <rect x="40" y="20" width="14" height="8" fill="#7ec8e8"/>
+            <circle cx="44" cy="40" r="3.5" fill="#fff8e0"/>
+            <circle cx="54" cy="40" r="3.5" fill="#fff8e0"/>
+            <text x="18" y="36" fill="#fff" font-size="6" font-family="sans-serif" font-weight="700">BP</text>
           </svg>
         </button>
       </div>

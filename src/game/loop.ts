@@ -24,11 +24,9 @@ export type GameSession = {
 const PLAYER_SPEED = 55;
 const CHASER_SPEED = 42;
 const FRIGHT_SPEED = 28;
-const EATEN_SPEED = 70;
 const TOUCH_R = 8;
 const PELLET_R = 6;
 const STARTING_LIVES = 5;
-/** Seconds to show positions before movement begins. */
 const READY_SECONDS = 2;
 
 export function startGame(
@@ -69,6 +67,8 @@ export function startGame(
 
   const emit = () => callbacks.onScore(score, lives, status);
 
+  const activeChasers = () => chasers.filter((g) => g.state !== "gone");
+
   const resetPositions = () => {
     player = pickSpawnPose(maze);
     resetChasers(maze, chasers);
@@ -84,8 +84,8 @@ export function startGame(
     last = now;
 
     mouthPhase += dt * 8;
+    const live = activeChasers();
 
-    // Preview: draw everyone, no movement yet
     if (readyTimer > 0) {
       readyTimer -= dt;
       const secs = Math.max(1, Math.ceil(readyTimer));
@@ -96,14 +96,7 @@ export function startGame(
         invuln = 0.4;
       }
       emit();
-      drawFrame(
-        rc,
-        maze,
-        player,
-        chasers,
-        0.5 + 0.5 * Math.sin(mouthPhase),
-        false,
-      );
+      drawFrame(rc, maze, player, live, 0.5 + 0.5 * Math.sin(mouthPhase), false);
       raf = requestAnimationFrame(tick);
       return;
     }
@@ -149,21 +142,28 @@ export function startGame(
       }
     }
 
-    const rusher = chasers.find((g) => g.role === "rusher")!;
-    for (const g of chasers) {
+    const leader = live.find((g) => g.role === "rusher") ?? live[0];
+    for (const g of live) {
       let spd = CHASER_SPEED;
       if (g.state === "frightened") spd = FRIGHT_SPEED;
-      if (g.state === "eaten") spd = EATEN_SPEED;
-      updateChaser(maze, g, player, rusher.pose, mode, dt, spd);
+      updateChaser(
+        maze,
+        g,
+        player,
+        leader?.pose ?? g.pose,
+        mode,
+        dt,
+        spd,
+      );
 
       if (invuln > 0) continue;
       if (!actorsTouching(maze, player, g.pose, TOUCH_R)) continue;
 
       if (g.state === "frightened") {
-        g.state = "eaten";
+        g.state = "gone";
         score += 200;
-        status = "Got one!";
-      } else if (g.state !== "eaten") {
+        status = "Cone cleared!";
+      } else {
         lives -= 1;
         status = lives > 0 ? "Ouch!" : "Game over";
         emit();
@@ -173,7 +173,7 @@ export function startGame(
             rc,
             maze,
             player,
-            chasers,
+            activeChasers(),
             0.5 + 0.5 * Math.sin(mouthPhase),
             frightTimer > 0 && Math.floor(frightTimer * 8) % 2 === 0,
           );
@@ -191,7 +191,7 @@ export function startGame(
       rc,
       maze,
       player,
-      chasers,
+      activeChasers(),
       0.5 + 0.5 * Math.sin(mouthPhase),
       frightTimer > 0 && Math.floor(frightTimer * 8) % 2 === 0,
     );

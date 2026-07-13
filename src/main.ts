@@ -7,6 +7,27 @@ import { buildMaze } from "./maze/build";
 import { startGame, type GameSession } from "./game/loop";
 import { setHud, setPlayingUi, showToast } from "./ui/hud";
 
+const splash = document.getElementById("splash");
+const splashPlay = document.getElementById("splash-play");
+const splashAbout = document.getElementById("splash-about");
+const aboutPanel = document.getElementById("about-panel");
+const appEl = document.getElementById("app");
+
+splashPlay?.addEventListener("click", () => {
+  splash?.classList.add("hidden");
+  appEl?.classList.remove("hidden");
+  // Map was created hidden — force a size pass
+  requestAnimationFrame(() => {
+    map.invalidateSize({ animate: false });
+    schedulePrefetch();
+    showToast("Zoom to a few blocks, then press the bus.", 4000);
+  });
+});
+
+splashAbout?.addEventListener("click", () => {
+  aboutPanel?.classList.toggle("hidden");
+});
+
 const mapEl = document.getElementById("map");
 const canvasEl = document.getElementById("game-canvas");
 const fabEl = document.getElementById("play-fab");
@@ -53,7 +74,6 @@ function schedulePrefetch(): void {
 
 map.on("moveend", schedulePrefetch);
 map.on("zoomend", schedulePrefetch);
-schedulePrefetch();
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -79,35 +99,32 @@ async function startPlay(): Promise<void> {
   showToast("Loading streets…");
 
   try {
-    // Kick off street download immediately (often already cached from pan/zoom)
-    const boundsBefore = getViewBounds(map);
-    const mazePromise = buildMaze(boundsBefore);
-
+    // Banner + size first so streets match the on-screen view exactly
     await layoutForPlay(true);
     setHud(0, 5, "Loading…");
+    map.invalidateSize({ animate: false });
+    await waitFrame();
 
-    const result = await mazePromise;
+    const bounds = getViewBounds(map);
+    const result = await buildMaze(bounds);
     if (!result.ok) {
       showToast(result.reason);
       await layoutForPlay(false);
       return;
     }
 
-    // Align map size after banner; maze was built for nearly the same view
-    map.invalidateSize({ animate: false });
-
     const { maze, origin } = result;
     lockMap(map, true);
     setHud(0, 5, "Get ready…");
-    showToast("Spot the chasers — then collect the dots!", 2800);
+    showToast("Spot the cones — then munch the green dots!", 2800);
 
     session = startGame(map, maze, origin, canvas, {
       onScore: (score, lives, status) => setHud(score, lives, status),
       onEnd: (outcome) => {
         if (outcome === "won") {
-          showToast("Level clear! Every dot is gone.");
+          showToast("Route cleared! Every dot is gone.");
         } else {
-          showToast("Caught! Try another neighborhood.");
+          showToast("Caught by a cone! Try a tighter block.");
         }
       },
     });
@@ -130,7 +147,7 @@ async function exitGame(): Promise<void> {
   lockMap(map, false);
   await layoutForPlay(false);
   schedulePrefetch();
-  showToast("Back to the map — pan or zoom, then play again.");
+  showToast("Back to the map — zoom to a few blocks, then munch again.");
 }
 
 fab.addEventListener("click", () => {
@@ -140,5 +157,3 @@ fab.addEventListener("click", () => {
 exitBtn?.addEventListener("click", () => {
   void exitGame();
 });
-
-showToast("Search or pan to streets, then press Play.", 4000);

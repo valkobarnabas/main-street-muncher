@@ -1,15 +1,18 @@
-@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Monoton&family=Press+Start+2P&family=Space+Grotesk:wght@400;600;700&display=swap");
 
 :root {
   --bg: #070b16;
   --ink: #e8eefc;
   --muted: #9aadc4;
-  --accent: #ffd400;
+  --accent: #80bc00;
+  --neon: #ff4fd8;
+  --neon-2: #5cfffa;
   --danger: #ff4d6d;
   --panel: rgba(8, 12, 24, 0.82);
   --hud-bg: #0a1020;
   --hud-height: 56px;
   --radius: 14px;
+  --road: #333366;
   font-family: "Space Grotesk", system-ui, sans-serif;
   color: var(--ink);
   background: var(--bg);
@@ -20,20 +23,168 @@
 }
 
 html,
-body,
-#app {
+body {
   margin: 0;
   width: 100%;
   height: 100%;
   overflow: hidden;
 }
 
+/* —— Splash / neon title —— */
+#splash {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 24px;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 30%, rgba(255, 79, 216, 0.18), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 50% 70%, rgba(92, 255, 250, 0.12), transparent 50%),
+    linear-gradient(160deg, #050814 0%, #12102a 45%, #0a1620 100%);
+  text-align: center;
+}
+
+.splash-glow {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.neon-title {
+  position: relative;
+  margin: 0;
+  max-width: 14ch;
+  font-family: "Monoton", cursive;
+  font-weight: 400;
+  font-size: clamp(2.2rem, 8vw, 4.4rem);
+  line-height: 1.15;
+  letter-spacing: 0.04em;
+  color: #fff;
+  text-shadow:
+    0 0 7px #fff,
+    0 0 14px var(--neon-2),
+    0 0 28px var(--neon),
+    0 0 56px var(--neon),
+    0 0 90px var(--neon);
+  animation: neon-flicker 4.5s infinite alternate;
+}
+
+@keyframes neon-flicker {
+  0%,
+  19%,
+  21%,
+  23%,
+  25%,
+  55%,
+  57%,
+  100% {
+    text-shadow:
+      0 0 7px #fff,
+      0 0 14px var(--neon-2),
+      0 0 28px var(--neon),
+      0 0 56px var(--neon);
+    opacity: 1;
+  }
+  20%,
+  24%,
+  56% {
+    text-shadow: none;
+    opacity: 0.82;
+  }
+}
+
+.splash-tagline {
+  margin: 0;
+  max-width: 36rem;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.splash-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.neon-btn {
+  border: 2px solid var(--neon-2);
+  border-radius: 999px;
+  padding: 14px 28px;
+  background: rgba(10, 20, 40, 0.7);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow:
+    0 0 12px rgba(92, 255, 250, 0.35),
+    inset 0 0 12px rgba(92, 255, 250, 0.08);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.neon-btn:hover {
+  transform: scale(1.04);
+  box-shadow:
+    0 0 22px rgba(255, 79, 216, 0.45),
+    inset 0 0 14px rgba(255, 79, 216, 0.12);
+  border-color: var(--neon);
+}
+
+.neon-btn-ghost {
+  border-color: rgba(255, 255, 255, 0.35);
+  box-shadow: none;
+  color: var(--muted);
+}
+
+.about-panel {
+  position: relative;
+  max-width: 34rem;
+  margin-top: 8px;
+  padding: 18px 20px;
+  text-align: left;
+  background: rgba(6, 10, 24, 0.82);
+  border: 1px solid rgba(92, 255, 250, 0.25);
+  border-radius: var(--radius);
+  backdrop-filter: blur(10px);
+}
+
+.about-panel h2 {
+  margin: 0 0 10px;
+  font-size: 1.1rem;
+  color: var(--neon-2);
+}
+
+.about-panel p {
+  margin: 0 0 10px;
+  color: var(--muted);
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+.about-credit {
+  font-size: 0.8rem !important;
+  opacity: 0.75;
+}
+
 #app {
+  margin: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-/* Dedicated top banner — outside the play surface */
 #hud {
   flex: 0 0 var(--hud-height);
   width: 100%;
@@ -126,7 +277,7 @@ body,
   border-radius: 10px;
   padding: 8px 14px;
   background: var(--accent);
-  color: #1a1400;
+  color: #102000;
   font-weight: 700;
   cursor: pointer;
 }
@@ -144,14 +295,14 @@ body,
   right: 24px;
   bottom: 24px;
   z-index: 500;
-  width: 72px;
-  height: 72px;
+  width: 76px;
+  height: 76px;
   border: 0;
   border-radius: 50%;
   background: #121a2e;
   box-shadow:
     0 10px 30px rgba(0, 0, 0, 0.45),
-    0 0 0 3px var(--accent);
+    0 0 0 3px var(--road);
   cursor: pointer;
   display: grid;
   place-items: center;
@@ -181,7 +332,7 @@ body,
   max-width: min(480px, calc(100% - 32px));
   padding: 12px 16px;
   background: var(--panel);
-  border: 1px solid rgba(255, 212, 0, 0.45);
+  border: 1px solid rgba(128, 188, 0, 0.45);
   border-radius: var(--radius);
   text-align: center;
   backdrop-filter: blur(10px);

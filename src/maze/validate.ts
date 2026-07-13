@@ -1,34 +1,32 @@
 import type { RawGraph } from "./graph";
 import type { Rect } from "./clip";
+import type { ViewBounds } from "../types";
+
+/** Longest view side allowed for a playable round (meters). */
+export const MAX_VIEW_SIDE_METERS = 550;
 
 export type ValidationResult =
   | { ok: true }
   | { ok: false; reason: string };
 
-export function validateGraph(g: RawGraph, rect: Rect): ValidationResult {
-  const nodeCount = g.nodes.size;
+export function validateViewSize(bounds: ViewBounds): ValidationResult {
+  const longest = Math.max(bounds.widthMeters, bounds.heightMeters);
+  if (longest > MAX_VIEW_SIDE_METERS) {
+    return {
+      ok: false,
+      reason: "Area too large — zoom in to a few blocks (not the whole city).",
+    };
+  }
+  return { ok: true };
+}
+
+export function validateGraph(g: RawGraph, _rect: Rect): ValidationResult {
   const edgeCount = g.edges.size;
-  let totalLen = 0;
-  for (const e of g.edges.values()) totalLen += e.length;
 
-  const span = Math.max(rect.maxX - rect.minX, rect.maxY - rect.minY);
-
-  if (edgeCount < 4) {
+  if (edgeCount < 1) {
     return {
       ok: false,
-      reason: "Not enough streets in view — zoom into a denser neighborhood.",
-    };
-  }
-  if (nodeCount < 4) {
-    return {
-      ok: false,
-      reason: "Too few intersections — try a grid of city blocks.",
-    };
-  }
-  if (totalLen < span * 0.8) {
-    return {
-      ok: false,
-      reason: "Streets are too sparse here — zoom in or pick a busier area.",
+      reason: "No streets in view — pan to cover at least one road.",
     };
   }
   return { ok: true };

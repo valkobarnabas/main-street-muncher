@@ -5,7 +5,7 @@ export function createMap(container: HTMLElement): L.Map {
   const map = L.map(container, {
     zoomControl: true,
     attributionControl: true,
-  }).setView([40.758, -73.9855], 17);
+  }).setView([47.4979, 19.0402], 17); // Budapest — Ikarus home turf
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,

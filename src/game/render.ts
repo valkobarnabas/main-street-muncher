@@ -3,6 +3,11 @@ import { unproject } from "../maze/geo";
 import { poseWorld } from "./movement";
 import type L from "leaflet";
 
+const ROAD_OUTLINE = "#333366";
+const ROAD_FILL = "#000000";
+const DOT = "#80BC00";
+const DOT_POWER = "#c5e86a";
+
 export type RenderContext = {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
@@ -74,21 +79,18 @@ export function drawFrame(
     e.points.map((p) => worldToScreen(map, origin, p.x, p.y)),
   );
 
-  // Two global passes so intersections merge into one corridor outline
-  // (interleaved per-edge strokes cause blue cross-hatching).
-  strokeAll(ctx, paths, "#2f6bff", 18);
-  strokeAll(ctx, paths, "#000000", 12);
+  strokeAll(ctx, paths, ROAD_OUTLINE, 18);
+  strokeAll(ctx, paths, ROAD_FILL, 12);
 
   for (const pellet of maze.pellets) {
     if (pellet.eaten) continue;
     const s = worldToScreen(map, origin, pellet.x, pellet.y);
     ctx.beginPath();
-    ctx.fillStyle = pellet.power ? "#f5d0a9" : "#ffe566";
+    ctx.fillStyle = pellet.power ? DOT_POWER : DOT;
     ctx.arc(s.sx, s.sy, pellet.power ? 7 : 2.4, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  // Player: directional chevron (not a wedge-mouth disc)
   const pp = poseWorld(maze, player);
   const ps = worldToScreen(map, origin, pp.x, pp.y);
   const e = maze.edges.get(player.edgeId)!;
@@ -97,78 +99,130 @@ export function drawFrame(
   const screenFrom = worldToScreen(map, origin, from.x, from.y);
   const screenTo = worldToScreen(map, origin, to.x, to.y);
   const facing = Math.atan2(screenTo.sy - screenFrom.sy, screenTo.sx - screenFrom.sx);
-  drawRunner(ctx, ps.sx, ps.sy, facing, 0.92 + pulse * 0.08);
+  drawIkarusBus(ctx, ps.sx, ps.sy, facing, 0.92 + pulse * 0.08);
 
   for (const g of chasers) {
     const gp = poseWorld(maze, g.pose);
     const gs = worldToScreen(map, origin, gp.x, gp.y);
-    let color = g.color;
-    if (g.state === "frightened") {
-      color = frightenedFlash ? "#e8eefc" : "#3b5bdb";
-    } else if (g.state === "eaten") {
-      color = "#cfd8ff";
-    }
-    drawChaser(ctx, gs.sx, gs.sy, color, g.state === "eaten");
+    drawCone(ctx, gs.sx, gs.sy, g.state === "frightened", frightenedFlash);
   }
 }
 
-/** Yellow arrowhead runner. */
-function drawRunner(
+/** Simplified Ikarus 260 — boxy two-tone front, round lamps, BUDAPEST. */
+function drawIkarusBus(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   angle: number,
   scale: number,
 ): void {
-  const s = 11 * scale;
+  const s = 12 * scale;
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(angle);
+
+  // Body (front face facing +x)
+  const w = s * 1.7;
+  const h = s * 1.15;
+  ctx.fillStyle = "#1a3a7a";
+  ctx.fillRect(-w * 0.35, -h / 2, w, h);
+
+  // Silver upper band
+  ctx.fillStyle = "#c5ccd4";
+  ctx.fillRect(-w * 0.35, -h / 2, w, h * 0.42);
+
+  // Split windshield
+  ctx.fillStyle = "#7ec8e8";
+  ctx.fillRect(w * 0.25, -h * 0.42, w * 0.32, h * 0.34);
+  ctx.strokeStyle = "#a8b0b8";
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(s, 0);
-  ctx.lineTo(-s * 0.75, s * 0.7);
-  ctx.lineTo(-s * 0.35, 0);
-  ctx.lineTo(-s * 0.75, -s * 0.7);
-  ctx.closePath();
-  ctx.fillStyle = "#ffd400";
-  ctx.fill();
-  ctx.strokeStyle = "#1a1400";
-  ctx.lineWidth = 1.5;
+  ctx.moveTo(w * 0.41, -h * 0.42);
+  ctx.lineTo(w * 0.41, -h * 0.08);
   ctx.stroke();
+
+  // Bumper
+  ctx.fillStyle = "#b0b6bc";
+  ctx.fillRect(w * 0.55, -h * 0.22, w * 0.12, h * 0.44);
+
+  // Grille
+  ctx.fillStyle = "#1a1a1a";
+  ctx.fillRect(w * 0.28, h * 0.05, w * 0.28, h * 0.22);
+  ctx.strokeStyle = "#d0d4d8";
+  ctx.lineWidth = 0.8;
+  for (let i = 0; i < 3; i++) {
+    const gy = h * 0.08 + i * h * 0.07;
+    ctx.beginPath();
+    ctx.moveTo(w * 0.3, gy);
+    ctx.lineTo(w * 0.54, gy);
+    ctx.stroke();
+  }
+
+  // Round headlights
+  ctx.fillStyle = "#fff8e0";
+  ctx.beginPath();
+  ctx.arc(w * 0.42, -h * 0.28, s * 0.14, 0, Math.PI * 2);
+  ctx.arc(w * 0.42, h * 0.28, s * 0.14, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#222";
+  ctx.lineWidth = 0.7;
+  ctx.stroke();
+
+  // Amber indicators
+  ctx.fillStyle = "#f0a020";
+  ctx.fillRect(w * 0.36, -h * 0.42, w * 0.12, h * 0.08);
+  ctx.fillRect(w * 0.36, h * 0.34, w * 0.12, h * 0.08);
+
+  // BUDAPEST label
+  ctx.save();
+  ctx.translate(w * 0.12, 0);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `bold ${Math.max(5, s * 0.32)}px Space Grotesk, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("BUDAPEST", 0, 0);
+  ctx.restore();
+
+  ctx.strokeStyle = "#0a1528";
+  ctx.lineWidth = 1.2;
+  ctx.strokeRect(-w * 0.35, -h / 2, w, h);
+
   ctx.restore();
 }
 
-/** Angular diamond chaser — distinct from arcade ghost silhouettes. */
-function drawChaser(
+/** Traffic cone chaser. */
+function drawCone(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
-  color: string,
-  eyesOnly: boolean,
+  frightened: boolean,
+  flash: boolean,
 ): void {
-  if (!eyesOnly) {
-    ctx.beginPath();
-    ctx.moveTo(x, y - 10);
-    ctx.lineTo(x + 9, y);
-    ctx.lineTo(x, y + 10);
-    ctx.lineTo(x - 9, y);
-    ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.strokeStyle = "rgba(0,0,0,0.35)";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-  }
-  ctx.fillStyle = eyesOnly ? "#1a1a2e" : "#fff";
+  const body = frightened ? (flash ? "#e8eefc" : "#3b5bdb") : "#f06020";
+  const stripe = frightened ? "#a0a8c0" : "#ffffff";
+
   ctx.beginPath();
-  ctx.arc(x - 3, y - 1, 2.2, 0, Math.PI * 2);
-  ctx.arc(x + 3, y - 1, 2.2, 0, Math.PI * 2);
+  ctx.moveTo(x, y - 11);
+  ctx.lineTo(x + 8, y + 9);
+  ctx.lineTo(x - 8, y + 9);
+  ctx.closePath();
+  ctx.fillStyle = body;
   ctx.fill();
-  if (!eyesOnly) {
-    ctx.fillStyle = "#1a1a2e";
-    ctx.beginPath();
-    ctx.arc(x - 2.5, y - 1, 1, 0, Math.PI * 2);
-    ctx.arc(x + 3.5, y - 1, 1, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  ctx.strokeStyle = "rgba(0,0,0,0.4)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Base
+  ctx.fillStyle = body;
+  ctx.fillRect(x - 9, y + 7, 18, 4);
+
+  // White stripes
+  ctx.fillStyle = stripe;
+  ctx.beginPath();
+  ctx.moveTo(x, y - 4);
+  ctx.lineTo(x + 4.5, y + 2);
+  ctx.lineTo(x - 4.5, y + 2);
+  ctx.closePath();
+  ctx.fill();
 }

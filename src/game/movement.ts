@@ -129,19 +129,14 @@ export function advancePose(
     const used = Math.abs((nextT >= 1 ? 1 - cur.t : cur.t) * e.length);
     remaining = Math.max(0, remaining - used);
 
-    // Portal wrap: leaving a paired boundary exit re-enters at its match
+    // Dead-end wrap: always teleport (never reverse at a street end)
     const portal = portalPartner(maze.portals, hitNode);
-    if (portal) {
-      const degree = (maze.adj.get(hitNode) ?? []).length;
-      const onlyWayBack = degree <= 1;
-      const outward = isOutwardExit(maze, hitNode, cur.edgeId, desired);
-      if (onlyWayBack || outward) {
-        const nextPose = enterFromPortal(maze, portal.partnerId, desired);
-        if (nextPose) {
-          cur = nextPose;
-          portalUsed = true;
-          continue;
-        }
+    if (portal && (maze.adj.get(hitNode) ?? []).length <= 1) {
+      const nextPose = enterFromPortal(maze, portal.partnerId, desired);
+      if (nextPose) {
+        cur = nextPose;
+        portalUsed = true;
+        continue;
       }
     }
 
@@ -160,31 +155,6 @@ export function advancePose(
   }
 
   return { pose: cur, portalUsed };
-}
-
-/** True when the player is leaving the maze through a boundary portal. */
-function isOutwardExit(
-  maze: MazeGraph,
-  nodeId: number,
-  fromEdgeId: number,
-  desired: DesiredDir,
-): boolean {
-  const node = maze.nodes.get(nodeId);
-  if (!node?.onBoundary || !node.boundarySide) return false;
-  const others = (maze.adj.get(nodeId) ?? []).filter((id) => id !== fromEdgeId);
-  if (others.length === 0) return true;
-  if (!desired) return false;
-  const want = desiredDirToBearing(desired);
-  // Outward bearings by side
-  const outwardBrg =
-    node.boundarySide === "left"
-      ? 180
-      : node.boundarySide === "right"
-        ? 0
-        : node.boundarySide === "top"
-          ? 90
-          : -90;
-  return angleDiff(want, outwardBrg) <= 50;
 }
 
 function enterFromPortal(

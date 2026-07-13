@@ -74,7 +74,7 @@ export type DesiredDir = "up" | "down" | "left" | "right" | null;
 
 export type ChaserRole = "rusher" | "sneaker" | "trickster" | "loafer";
 
-export type ChaserState = "scatter" | "chase" | "frightened" | "eaten";
+export type ChaserState = "scatter" | "chase" | "frightened" | "eaten" | "gone";
 
 export type Chaser = {
   role: ChaserRole;

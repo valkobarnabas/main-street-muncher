@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 
-const OVERPASS_UA = "StreetDots/1.0 (https://github.com/; vite proxy)";
+const OVERPASS_UA = "MainStreetMuncher/1.0 (https://github.com/; vite proxy)";
 
 /** Set BASE_PATH=/repo-name/ in CI for project pages. Local/default is "/". */
 const base = process.env.BASE_PATH || "/";
