@@ -295,22 +295,56 @@ body {
   right: 24px;
   bottom: 24px;
   z-index: 500;
-  width: 76px;
-  height: 76px;
+  min-width: 88px;
+  height: 88px;
+  padding: 0 12px;
   border: 0;
   border-radius: 50%;
-  background: #121a2e;
+  background: #f5d000;
+  color: #1a1400;
+  font-family: "Press Start 2P", monospace;
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
   box-shadow:
-    0 10px 30px rgba(0, 0, 0, 0.45),
-    0 0 0 3px var(--road);
+    0 10px 30px rgba(0, 0, 0, 0.4),
+    0 0 0 3px #c4a800;
   cursor: pointer;
   display: grid;
   place-items: center;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
 }
 
 #play-fab:hover {
   transform: scale(1.06);
+  filter: brightness(1.05);
+}
+
+.fine-zoom {
+  margin-top: 8px !important;
+  padding: 8px 6px;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fine-zoom-label {
+  display: flex;
+  margin: 0;
+  cursor: pointer;
+}
+
+.fine-zoom-slider {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 22px;
+  height: 110px;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  accent-color: #f5d000;
 }
 
 #play-fab:disabled {
