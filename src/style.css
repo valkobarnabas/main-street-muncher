@@ -1,0 +1,218 @@
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;600;700&display=swap");
+
+:root {
+  --bg: #070b16;
+  --ink: #e8eefc;
+  --muted: #9aadc4;
+  --accent: #ffd400;
+  --danger: #ff4d6d;
+  --panel: rgba(8, 12, 24, 0.82);
+  --hud-bg: #0a1020;
+  --hud-height: 56px;
+  --radius: 14px;
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Dedicated top banner — outside the play surface */
+#hud {
+  flex: 0 0 var(--hud-height);
+  width: 100%;
+  z-index: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 18px;
+  background: var(--hud-bg);
+  border-bottom: 2px solid var(--accent);
+  font-family: "Press Start 2P", monospace;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+#hud-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 20px;
+  min-width: 0;
+}
+
+#hud-status {
+  color: var(--accent);
+}
+
+#exit-btn {
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--danger);
+  color: white;
+  font: inherit;
+  font-size: 9px;
+  cursor: pointer;
+}
+
+#stage {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  width: 100%;
+}
+
+#map {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: #1a2338;
+}
+
+#search-bar {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  width: min(520px, calc(100% - 32px));
+  display: grid;
+  gap: 8px;
+}
+
+#search-form {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: var(--panel);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius);
+  backdrop-filter: blur(10px);
+}
+
+#search-input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 1rem;
+  padding: 8px 10px;
+}
+
+#search-btn {
+  border: 0;
+  border-radius: 10px;
+  padding: 8px 14px;
+  background: var(--accent);
+  color: #1a1400;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#hint {
+  margin: 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
+}
+
+#play-fab {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  z-index: 500;
+  width: 72px;
+  height: 72px;
+  border: 0;
+  border-radius: 50%;
+  background: #121a2e;
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.45),
+    0 0 0 3px var(--accent);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+#play-fab:hover {
+  transform: scale(1.06);
+}
+
+#play-fab:disabled {
+  opacity: 0.55;
+  cursor: wait;
+  transform: none;
+}
+
+#play-fab.playing {
+  display: none;
+}
+
+#toast {
+  position: absolute;
+  left: 50%;
+  bottom: 110px;
+  transform: translateX(-50%);
+  z-index: 600;
+  max-width: min(480px, calc(100% - 32px));
+  padding: 12px 16px;
+  background: var(--panel);
+  border: 1px solid rgba(255, 212, 0, 0.45);
+  border-radius: var(--radius);
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+
+#game-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 450;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(8, 12, 24, 0.7) !important;
+  color: #c9d4ea !important;
+}
+
+.leaflet-control-attribution a {
+  color: var(--accent) !important;
+}
+
+body.playing #search-bar {
+  display: none;
+}
+
+body.playing #map {
+  filter: saturate(0.15) brightness(0.28) contrast(0.9);
+}
