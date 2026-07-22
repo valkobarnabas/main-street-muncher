@@ -8,7 +8,7 @@ export function createMap(container: HTMLElement): L.Map {
     zoomSnap: 0.25,
     zoomDelta: 0.25,
     wheelPxPerZoomLevel: 100,
-  }).setView([47.4979, 19.0402], 17); // Budapest — Ikarus home turf
+  }).setView([40.758, -73.9855], 17); // Times Square, NYC
 
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: 19,

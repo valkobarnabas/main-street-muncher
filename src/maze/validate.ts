@@ -3,7 +3,7 @@ import type { Rect } from "./clip";
 import type { ViewBounds } from "../types";
 
 /** Longest view side allowed for a playable round (meters). */
-export const MAX_VIEW_SIDE_METERS = 3000;
+export const MAX_VIEW_SIDE_METERS = 6000;
 
 export type ValidationResult =
   | { ok: true }
@@ -14,7 +14,7 @@ export function validateViewSize(bounds: ViewBounds): ValidationResult {
   if (longest > MAX_VIEW_SIDE_METERS) {
     return {
       ok: false,
-      reason: "Area too large — zoom in to a few blocks (not the whole city).",
+      reason: "Area too large — zoom in a bit (neighborhood size, not the whole city).",
     };
   }
   return { ok: true };

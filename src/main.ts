@@ -6,6 +6,11 @@ import { prefetchStreets } from "./osm/overpass";
 import { buildMaze } from "./maze/build";
 import { startGame, type GameSession } from "./game/loop";
 import { setHud, setPlayingUi, showToast } from "./ui/hud";
+import { applyCssVars } from "./ui/appearance";
+import { initCustomizeUi } from "./ui/customize";
+
+applyCssVars();
+initCustomizeUi();
 
 const splash = document.getElementById("splash");
 const splashPlay = document.getElementById("splash-play");
@@ -116,7 +121,7 @@ async function startPlay(): Promise<void> {
     const { maze, origin } = result;
     lockMap(map, true);
     setHud(0, 5, "Get ready…");
-    showToast("Spot the cones — then munch the green dots!", 2800);
+    showToast("Spot the chasers — then munch the dots!", 2800);
 
     session = startGame(map, maze, origin, canvas, {
       onScore: (score, lives, status) => setHud(score, lives, status),
@@ -124,7 +129,7 @@ async function startPlay(): Promise<void> {
         if (outcome === "won") {
           showToast("Route cleared! Every dot is gone.");
         } else {
-          showToast("Caught by a cone! Try a tighter block.");
+          showToast("Caught! Try a tighter block.");
         }
       },
     });

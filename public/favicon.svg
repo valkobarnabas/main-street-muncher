@@ -1,9 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <rect width="64" height="64" rx="10" fill="#0b1020"/>
-  <rect x="6" y="16" width="52" height="32" rx="2" fill="#1a3a7a"/>
-  <rect x="6" y="16" width="52" height="12" fill="#c5ccd4"/>
-  <rect x="40" y="18" width="16" height="9" fill="#7ec8e8"/>
-  <circle cx="44" cy="40" r="4" fill="#fff8e0"/>
-  <circle cx="54" cy="40" r="4" fill="#fff8e0"/>
-  <text x="12" y="38" fill="#fff" font-size="7" font-family="Arial,sans-serif" font-weight="700">BP</text>
+  <rect x="14" y="12" width="8" height="12" rx="2" fill="#1a1a1a"/>
+  <rect x="42" y="12" width="8" height="12" rx="2" fill="#1a1a1a"/>
+  <rect x="14" y="40" width="8" height="12" rx="2" fill="#1a1a1a"/>
+  <rect x="42" y="40" width="8" height="12" rx="2" fill="#1a1a1a"/>
+  <rect x="10" y="18" width="44" height="28" rx="8" fill="#EE3325"/>
+  <rect x="36" y="24" width="12" height="16" rx="3" fill="#2a1010"/>
+  <rect x="14" y="26" width="10" height="12" rx="2" fill="#3a1818"/>
+  <circle cx="52" cy="24" r="3" fill="#ffe9a8"/>
+  <circle cx="52" cy="40" r="3" fill="#ffe9a8"/>
 </svg>

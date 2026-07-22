@@ -1,12 +1,15 @@
 import type { Chaser, LatLng, MazeGraph, EdgePose } from "../types";
 import { unproject } from "../maze/geo";
 import { poseWorld } from "./movement";
+import {
+  getAppearance,
+  lightenHex,
+  onAppearanceChange,
+  type Appearance,
+} from "../ui/appearance";
 import type L from "leaflet";
 
-const ROAD_OUTLINE = "#333366";
-const ROAD_FILL = "#000000";
-const DOT = "#80BC00";
-const DOT_POWER = "#c5e86a";
+const PLAYER_COLOR = "#EE3325";
 
 export type RenderContext = {
   canvas: HTMLCanvasElement;
@@ -14,6 +17,28 @@ export type RenderContext = {
   map: L.Map;
   origin: LatLng;
 };
+
+const imageCache = new Map<string, HTMLImageElement | null>();
+
+onAppearanceChange(() => {
+  // Drop unused entries when prefs change; keep loaded images for current URLs.
+  const a = getAppearance();
+  for (const key of [...imageCache.keys()]) {
+    if (key !== a.playerImage && key !== a.chaserImage) imageCache.delete(key);
+  }
+});
+
+function getCachedImage(dataUrl: string | null): HTMLImageElement | null {
+  if (!dataUrl) return null;
+  const existing = imageCache.get(dataUrl);
+  if (existing !== undefined) return existing;
+  const img = new Image();
+  imageCache.set(dataUrl, null);
+  img.onload = () => imageCache.set(dataUrl, img);
+  img.onerror = () => imageCache.delete(dataUrl);
+  img.src = dataUrl;
+  return imageCache.get(dataUrl) ?? null;
+}
 
 export function resizeCanvas(canvas: HTMLCanvasElement): void {
   const stage = canvas.parentElement;
@@ -67,6 +92,7 @@ export function drawFrame(
   const { canvas, ctx, map, origin } = rc;
   const w = canvas.clientWidth || window.innerWidth;
   const h = canvas.clientHeight || window.innerHeight;
+  const appearance = getAppearance();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   ctx.fillStyle = "rgba(0, 0, 8, 0.55)";
@@ -79,14 +105,15 @@ export function drawFrame(
     e.points.map((p) => worldToScreen(map, origin, p.x, p.y)),
   );
 
-  strokeAll(ctx, paths, ROAD_OUTLINE, 18);
-  strokeAll(ctx, paths, ROAD_FILL, 12);
+  strokeAll(ctx, paths, appearance.roadOutline, 18);
+  strokeAll(ctx, paths, appearance.roadFill, 12);
 
+  const powerDot = lightenHex(appearance.dot, 0.4);
   for (const pellet of maze.pellets) {
     if (pellet.eaten) continue;
     const s = worldToScreen(map, origin, pellet.x, pellet.y);
     ctx.beginPath();
-    ctx.fillStyle = pellet.power ? DOT_POWER : DOT;
+    ctx.fillStyle = pellet.power ? powerDot : appearance.dot;
     ctx.arc(s.sx, s.sy, pellet.power ? 7 : 2.4, 0, Math.PI * 2);
     ctx.fill();
   }
@@ -99,95 +126,127 @@ export function drawFrame(
   const screenFrom = worldToScreen(map, origin, from.x, from.y);
   const screenTo = worldToScreen(map, origin, to.x, to.y);
   const facing = Math.atan2(screenTo.sy - screenFrom.sy, screenTo.sx - screenFrom.sx);
-  drawIkarusBus(ctx, ps.sx, ps.sy, facing, 0.92 + pulse * 0.08);
+  drawPlayer(ctx, ps.sx, ps.sy, facing, 0.92 + pulse * 0.08, appearance);
 
   for (const g of chasers) {
     const gp = poseWorld(maze, g.pose);
     const gs = worldToScreen(map, origin, gp.x, gp.y);
-    drawCone(ctx, gs.sx, gs.sy, g.state === "frightened", frightenedFlash);
+    drawChaser(ctx, gs.sx, gs.sy, g.state === "frightened", frightenedFlash, appearance);
   }
 }
 
-/** Simplified Ikarus 260 — boxy two-tone front, round lamps, BUDAPEST. */
-function drawIkarusBus(
+function drawPlayer(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  angle: number,
+  scale: number,
+  appearance: Appearance,
+): void {
+  const custom = getCachedImage(appearance.playerImage);
+  if (custom) {
+    drawSpriteImage(ctx, custom, x, y, angle, 28 * scale);
+    return;
+  }
+  drawCar(ctx, x, y, angle, scale);
+}
+
+/** Top-down car — reads clearly when rotated in any direction. */
+function drawCar(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
   angle: number,
   scale: number,
 ): void {
-  const s = 12 * scale;
+  const s = 11 * scale;
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(angle);
 
-  // Body (front face facing +x)
-  const w = s * 1.7;
-  const h = s * 1.15;
-  ctx.fillStyle = "#1a3a7a";
-  ctx.fillRect(-w * 0.35, -h / 2, w, h);
+  const bodyW = s * 2.05;
+  const bodyH = s * 1.15;
 
-  // Silver upper band
-  ctx.fillStyle = "#c5ccd4";
-  ctx.fillRect(-w * 0.35, -h / 2, w, h * 0.42);
-
-  // Split windshield
-  ctx.fillStyle = "#7ec8e8";
-  ctx.fillRect(w * 0.25, -h * 0.42, w * 0.32, h * 0.34);
-  ctx.strokeStyle = "#a8b0b8";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(w * 0.41, -h * 0.42);
-  ctx.lineTo(w * 0.41, -h * 0.08);
-  ctx.stroke();
-
-  // Bumper
-  ctx.fillStyle = "#b0b6bc";
-  ctx.fillRect(w * 0.55, -h * 0.22, w * 0.12, h * 0.44);
-
-  // Grille
+  // Wheels
   ctx.fillStyle = "#1a1a1a";
-  ctx.fillRect(w * 0.28, h * 0.05, w * 0.28, h * 0.22);
-  ctx.strokeStyle = "#d0d4d8";
-  ctx.lineWidth = 0.8;
-  for (let i = 0; i < 3; i++) {
-    const gy = h * 0.08 + i * h * 0.07;
-    ctx.beginPath();
-    ctx.moveTo(w * 0.3, gy);
-    ctx.lineTo(w * 0.54, gy);
-    ctx.stroke();
-  }
+  const wheelW = s * 0.28;
+  const wheelH = s * 0.42;
+  ctx.fillRect(-bodyW * 0.28, -bodyH * 0.72, wheelW, wheelH);
+  ctx.fillRect(bodyW * 0.08, -bodyH * 0.72, wheelW, wheelH);
+  ctx.fillRect(-bodyW * 0.28, bodyH * 0.3, wheelW, wheelH);
+  ctx.fillRect(bodyW * 0.08, bodyH * 0.3, wheelW, wheelH);
 
-  // Round headlights
-  ctx.fillStyle = "#fff8e0";
-  ctx.beginPath();
-  ctx.arc(w * 0.42, -h * 0.28, s * 0.14, 0, Math.PI * 2);
-  ctx.arc(w * 0.42, h * 0.28, s * 0.14, 0, Math.PI * 2);
+  // Body
+  roundRect(ctx, -bodyW * 0.42, -bodyH / 2, bodyW, bodyH, s * 0.28);
+  ctx.fillStyle = PLAYER_COLOR;
   ctx.fill();
-  ctx.strokeStyle = "#222";
-  ctx.lineWidth = 0.7;
+  ctx.strokeStyle = "#8a1a12";
+  ctx.lineWidth = 1.2;
   ctx.stroke();
 
-  // Amber indicators
-  ctx.fillStyle = "#f0a020";
-  ctx.fillRect(w * 0.36, -h * 0.42, w * 0.12, h * 0.08);
-  ctx.fillRect(w * 0.36, h * 0.34, w * 0.12, h * 0.08);
+  // Cabin / windshield (front faces +x)
+  roundRect(ctx, bodyW * 0.02, -bodyH * 0.32, bodyW * 0.28, bodyH * 0.64, s * 0.12);
+  ctx.fillStyle = "#2a1010";
+  ctx.fill();
 
-  // BUDAPEST label
-  ctx.save();
-  ctx.translate(w * 0.12, 0);
-  ctx.rotate(-Math.PI / 2);
-  ctx.fillStyle = "#ffffff";
-  ctx.font = `bold ${Math.max(5, s * 0.32)}px Space Grotesk, sans-serif`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText("BUDAPEST", 0, 0);
+  // Rear window
+  roundRect(ctx, -bodyW * 0.34, -bodyH * 0.26, bodyW * 0.18, bodyH * 0.52, s * 0.1);
+  ctx.fillStyle = "#3a1818";
+  ctx.fill();
+
+  // Headlights
+  ctx.fillStyle = "#ffe9a8";
+  ctx.beginPath();
+  ctx.arc(bodyW * 0.52, -bodyH * 0.28, s * 0.12, 0, Math.PI * 2);
+  ctx.arc(bodyW * 0.52, bodyH * 0.28, s * 0.12, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Taillights
+  ctx.fillStyle = "#ff6b5a";
+  ctx.fillRect(-bodyW * 0.42, -bodyH * 0.28, s * 0.1, s * 0.18);
+  ctx.fillRect(-bodyW * 0.42, bodyH * 0.1, s * 0.1, s * 0.18);
+
   ctx.restore();
+}
 
-  ctx.strokeStyle = "#0a1528";
-  ctx.lineWidth = 1.2;
-  ctx.strokeRect(-w * 0.35, -h / 2, w, h);
+function drawChaser(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  frightened: boolean,
+  flash: boolean,
+  appearance: Appearance,
+): void {
+  const custom = getCachedImage(appearance.chaserImage);
+  if (custom && !frightened) {
+    drawSpriteImage(ctx, custom, x, y, 0, 26);
+    return;
+  }
+  if (custom && frightened) {
+    ctx.save();
+    ctx.globalAlpha = flash ? 0.55 : 0.9;
+    drawSpriteImage(ctx, custom, x, y, 0, 26);
+    ctx.restore();
+    return;
+  }
+  drawCone(ctx, x, y, frightened, flash);
+}
 
+function drawSpriteImage(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  x: number,
+  y: number,
+  angle: number,
+  size: number,
+): void {
+  const aspect = img.naturalWidth / Math.max(img.naturalHeight, 1);
+  const w = aspect >= 1 ? size : size * aspect;
+  const h = aspect >= 1 ? size / aspect : size;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.drawImage(img, -w / 2, -h / 2, w, h);
   ctx.restore();
 }
 
@@ -213,11 +272,9 @@ function drawCone(
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  // Base
   ctx.fillStyle = body;
   ctx.fillRect(x - 9, y + 7, 18, 4);
 
-  // White stripes
   ctx.fillStyle = stripe;
   ctx.beginPath();
   ctx.moveTo(x, y - 4);
@@ -225,4 +282,22 @@ function drawCone(
   ctx.lineTo(x - 4.5, y + 2);
   ctx.closePath();
   ctx.fill();
+}
+
+function roundRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+): void {
+  const radius = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + w, y, x + w, y + h, radius);
+  ctx.arcTo(x + w, y + h, x, y + h, radius);
+  ctx.arcTo(x, y + h, x, y, radius);
+  ctx.arcTo(x, y, x + w, y, radius);
+  ctx.closePath();
 }

@@ -33,7 +33,6 @@ jobs:
 
       - name: Build
         env:
-          Project site: https://valkobarnabas.github.io/street-dots/
           BASE_PATH: /${{ github.event.repository.name }}/
         run: npm run build
 
