@@ -285,9 +285,50 @@ body {
 #hint {
   margin: 0;
   text-align: center;
-  font-size: 0.85rem;
-  color: var(--muted);
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(8, 12, 24, 0.88);
+  border: 1px solid rgba(245, 208, 0, 0.55);
+  color: #ffe566;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.map-toolbar {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.menu-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 520;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+}
+
+.menu-btn:hover {
+  border-color: var(--neon-2);
+  color: var(--neon-2);
+}
+
+body.playing .menu-btn {
+  display: none;
 }
 
 #play-fab {

@@ -24,8 +24,8 @@
           collecting dots while construction cones try to catch you.
         </p>
         <p>
-          Street ends wrap to the far side so every road stays clearable.
-          Power dots let you flatten cones for good. Arrow keys or WASD to steer.
+          Roads that hit the map edge wrap to the far side.
+          Interior dead ends just turn you around. Arrow keys or WASD to steer.
           Use Customize to swap icons and colors.
         </p>
         <p class="about-credit">Map data © OpenStreetMap contributors.</p>
@@ -117,10 +117,16 @@
             <button type="submit" id="search-btn">Go</button>
           </form>
           <p id="hint">Zoom to a neighborhood, then press GO</p>
-          <button type="button" id="map-customize" class="map-customize-btn" data-open-customize>
-            Customize
-          </button>
+          <div class="map-toolbar">
+            <button type="button" id="map-customize" class="map-customize-btn" data-open-customize>
+              Customize
+            </button>
+          </div>
         </header>
+
+        <button type="button" id="menu-btn" class="menu-btn" title="Back to menu">
+          Menu
+        </button>
 
         <div id="toast" class="hidden" role="status"></div>
 

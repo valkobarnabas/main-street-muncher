@@ -1,7 +1,11 @@
 import type { LatLng, ViewBounds } from "../types";
+import { validateViewSize } from "../maze/validate";
 
 const cache = new Map<string, LatLng[][]>();
 const inflight = new Map<string, Promise<LatLng[][]>>();
+
+/** Cancels the previous best-effort prefetch when the view changes. */
+let prefetchAbort: AbortController | null = null;
 
 /** Dev-only Vite proxy (custom UA). Not available on GitHub Pages. */
 const DEV_PROXY = "/api/overpass";
@@ -39,7 +43,7 @@ function buildQuery(bounds: ViewBounds): string {
   ].join("|");
 
   return `
-[out:json][timeout:15];
+[out:json][timeout:12];
 way["highway"~"^(${highways})$"](${bounds.south},${bounds.west},${bounds.north},${bounds.east});
 out geom;
 `.trim();
@@ -86,10 +90,19 @@ async function postOverpass(
   return parseWays(data);
 }
 
-async function fetchStreetsUncached(bounds: ViewBounds): Promise<LatLng[][]> {
+async function fetchStreetsUncached(
+  bounds: ViewBounds,
+  outerSignal?: AbortSignal,
+): Promise<LatLng[][]> {
   const query = buildQuery(bounds);
   const endpoints = overpassEndpoints();
   const ac = new AbortController();
+  const onAbort = () => ac.abort();
+  outerSignal?.addEventListener("abort", onAbort);
+  if (outerSignal?.aborted) {
+    ac.abort();
+  }
+
   const attempts = endpoints.map((url) =>
     postOverpass(url, query, ac.signal),
   );
@@ -103,10 +116,20 @@ async function fetchStreetsUncached(bounds: ViewBounds): Promise<LatLng[][]> {
     ac.abort();
     await Promise.allSettled(attempts);
     throw new Error("All Overpass endpoints failed");
+  } finally {
+    outerSignal?.removeEventListener("abort", onAbort);
   }
 }
 
-export async function fetchStreets(bounds: ViewBounds): Promise<LatLng[][]> {
+export async function fetchStreets(
+  bounds: ViewBounds,
+  signal?: AbortSignal,
+): Promise<LatLng[][]> {
+  const size = validateViewSize(bounds);
+  if (!size.ok) {
+    throw new Error(size.reason);
+  }
+
   const key = bboxKey(bounds);
   const hit = cache.get(key);
   if (hit) return hit;
@@ -114,7 +137,7 @@ export async function fetchStreets(bounds: ViewBounds): Promise<LatLng[][]> {
   const pending = inflight.get(key);
   if (pending) return pending;
 
-  const req = fetchStreetsUncached(bounds)
+  const req = fetchStreetsUncached(bounds, signal)
     .then((ways) => {
       cache.set(key, ways);
       return ways;
@@ -127,8 +150,26 @@ export async function fetchStreets(bounds: ViewBounds): Promise<LatLng[][]> {
   return req;
 }
 
+/**
+ * Prefetch only playable views. Cancels the previous attempt and never shares
+ * an abortable in-flight promise with GO (so canceling prefetch can't stall play).
+ */
 export function prefetchStreets(bounds: ViewBounds): void {
-  void fetchStreets(bounds).catch(() => {
-    /* prefetch is best-effort */
-  });
+  prefetchAbort?.abort();
+  prefetchAbort = null;
+
+  if (!validateViewSize(bounds).ok) return;
+
+  const key = bboxKey(bounds);
+  if (cache.has(key)) return;
+
+  const ac = new AbortController();
+  prefetchAbort = ac;
+  void fetchStreetsUncached(bounds, ac.signal)
+    .then((ways) => {
+      if (!ac.signal.aborted) cache.set(key, ways);
+    })
+    .catch(() => {
+      /* prefetch is best-effort */
+    });
 }

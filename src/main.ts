@@ -4,6 +4,7 @@ import { createMap, getViewBounds, lockMap } from "./map/mapApp";
 import { searchPlace } from "./osm/nominatim";
 import { prefetchStreets } from "./osm/overpass";
 import { buildMaze } from "./maze/build";
+import { validateViewSize } from "./maze/validate";
 import { startGame, type GameSession } from "./game/loop";
 import { setHud, setPlayingUi, showToast } from "./ui/hud";
 import { applyCssVars } from "./ui/appearance";
@@ -17,6 +18,15 @@ const splashPlay = document.getElementById("splash-play");
 const splashAbout = document.getElementById("splash-about");
 const aboutPanel = document.getElementById("about-panel");
 const appEl = document.getElementById("app");
+const menuBtn = document.getElementById("menu-btn");
+
+function showMenu(): void {
+  void exitGame().finally(() => {
+    appEl?.classList.add("hidden");
+    splash?.classList.remove("hidden");
+    aboutPanel?.classList.add("hidden");
+  });
+}
 
 splashPlay?.addEventListener("click", () => {
   splash?.classList.add("hidden");
@@ -31,6 +41,10 @@ splashPlay?.addEventListener("click", () => {
 
 splashAbout?.addEventListener("click", () => {
   aboutPanel?.classList.toggle("hidden");
+});
+
+menuBtn?.addEventListener("click", () => {
+  showMenu();
 });
 
 const mapEl = document.getElementById("map");
@@ -99,6 +113,13 @@ form.addEventListener("submit", async (e) => {
 
 async function startPlay(): Promise<void> {
   if (starting || session) return;
+
+  const sizeCheck = validateViewSize(getViewBounds(map));
+  if (!sizeCheck.ok) {
+    showToast(sizeCheck.reason);
+    return;
+  }
+
   starting = true;
   fab.disabled = true;
   showToast("Loading streets…");
@@ -111,6 +132,13 @@ async function startPlay(): Promise<void> {
     await waitFrame();
 
     const bounds = getViewBounds(map);
+    const again = validateViewSize(bounds);
+    if (!again.ok) {
+      showToast(again.reason);
+      await layoutForPlay(false);
+      return;
+    }
+
     const result = await buildMaze(bounds);
     if (!result.ok) {
       showToast(result.reason);
