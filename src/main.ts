@@ -35,7 +35,7 @@ splashPlay?.addEventListener("click", () => {
   requestAnimationFrame(() => {
     map.invalidateSize({ animate: false });
     schedulePrefetch();
-    showToast("Zoom to a neighborhood, then press GO.", 4000);
+    showToast("Zoom to a neighborhood, then press PLAY.", 4000);
   });
 });
 
@@ -180,7 +180,7 @@ async function exitGame(): Promise<void> {
   lockMap(map, false);
   await layoutForPlay(false);
   schedulePrefetch();
-  showToast("Back to the map — zoom to a neighborhood, then press GO.");
+  showToast("Back to the map — zoom to a neighborhood, then press PLAY.");
 }
 
 fab.addEventListener("click", () => {
