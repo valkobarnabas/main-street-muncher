@@ -1,4 +1,4 @@
-import type { EdgePose, Chaser, LatLng, MazeGraph } from "../types";
+import type { DesiredDir, EdgePose, Chaser, LatLng, MazeGraph } from "../types";
 import {
   createChasers,
   endFrighten,
@@ -8,7 +8,7 @@ import {
   updateChaser,
 } from "./chasers";
 import { createInput } from "./input";
-import { actorsTouching, advancePose, poseWorld } from "./movement";
+import { actorsTouching, advancePose, orientPoseToDesired, poseWorld } from "./movement";
 import { drawFrame, resizeCanvas, type RenderContext } from "./render";
 import type L from "leaflet";
 
@@ -59,6 +59,8 @@ export function startGame(
   let invuln = 0;
   let readyTimer = READY_SECONDS;
   let raf = 0;
+  /** Facing chosen during ready — applied at spawn, not queued as a turn. */
+  let startFacing: DesiredDir = null;
 
   const rc: RenderContext = { canvas, ctx, map, origin };
 
@@ -69,12 +71,18 @@ export function startGame(
 
   const activeChasers = () => chasers.filter((g) => g.state !== "gone");
 
+  const applyStartFacing = () => {
+    if (!startFacing) return;
+    player = orientPoseToDesired(maze, player, startFacing);
+  };
+
   const resetPositions = () => {
     player = pickSpawnPose(maze);
     resetChasers(maze, chasers);
     invuln = 0;
     readyTimer = READY_SECONDS;
     status = "Get ready…";
+    startFacing = null;
     input.state.desired = null;
   };
 
@@ -88,15 +96,22 @@ export function startGame(
 
     if (readyTimer > 0) {
       readyTimer -= dt;
-      // Ignore / discard turn buffers while frozen at load.
+      // Choose spawn facing from keys, but never keep them as a post-start turn queue.
+      if (input.isHeld()) input.adoptHeldOnly();
+      if (input.state.desired) {
+        startFacing = input.state.desired;
+        applyStartFacing();
+      }
       input.state.desired = null;
+
       const secs = Math.max(1, Math.ceil(readyTimer));
       status = readyTimer > 0 ? `Get ready… ${secs}` : "Go!";
       if (readyTimer <= 0) {
         readyTimer = 0;
         status = "Go!";
         invuln = 0.4;
-        // Drop queued taps from the freeze; keep only a key still held.
+        applyStartFacing();
+        // Held key becomes live steering; taps from ready stay discarded.
         input.adoptHeldOnly();
       }
       emit();
