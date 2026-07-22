@@ -8,7 +8,7 @@ import {
   updateChaser,
 } from "./chasers";
 import { createInput } from "./input";
-import { actorsTouching, advancePose, poseWorld } from "./movement";
+import { actorsTouching, advancePose, orientPoseToDesired, poseWorld } from "./movement";
 import { drawFrame, resizeCanvas, type RenderContext } from "./render";
 import type L from "leaflet";
 
@@ -75,7 +75,10 @@ export function startGame(
     invuln = 0;
     readyTimer = READY_SECONDS;
     status = "Get ready…";
-    input.state.desired = null;
+    // Keep buffered / held arrows so ready-period input still aims the start.
+    if (input.state.desired) {
+      player = orientPoseToDesired(maze, player, input.state.desired);
+    }
   };
 
   const tick = (now: number) => {
@@ -88,12 +91,19 @@ export function startGame(
 
     if (readyTimer > 0) {
       readyTimer -= dt;
+      // Face the held/buffered direction during countdown so Go! starts that way.
+      if (input.state.desired) {
+        player = orientPoseToDesired(maze, player, input.state.desired);
+      }
       const secs = Math.max(1, Math.ceil(readyTimer));
       status = readyTimer > 0 ? `Get ready… ${secs}` : "Go!";
       if (readyTimer <= 0) {
         readyTimer = 0;
         status = "Go!";
         invuln = 0.4;
+        if (input.state.desired) {
+          player = orientPoseToDesired(maze, player, input.state.desired);
+        }
       }
       emit();
       drawFrame(rc, maze, player, live, 0.5 + 0.5 * Math.sin(mouthPhase), false);

@@ -25,6 +25,20 @@ export function edgeBearing(maze: MazeGraph, edgeId: number, forward: boolean): 
   return (Math.atan2(to.y - from.y, to.x - from.x) * 180) / Math.PI;
 }
 
+/** Face along the current edge in the direction that best matches `desired`. */
+export function orientPoseToDesired(
+  maze: MazeGraph,
+  pose: EdgePose,
+  desired: DesiredDir,
+): EdgePose {
+  if (!desired) return pose;
+  if (!maze.edges.has(pose.edgeId)) return pose;
+  const want = desiredDirToBearing(desired);
+  const forwardDiff = angleDiff(edgeBearing(maze, pose.edgeId, true), want);
+  const backDiff = angleDiff(edgeBearing(maze, pose.edgeId, false), want);
+  return { ...pose, forward: forwardDiff <= backDiff };
+}
+
 /** Bearing leaving `nodeId` along `edgeId`. */
 function exitBearing(maze: MazeGraph, edgeId: number, nodeId: number): number {
   return edgeBearing(maze, edgeId, facingToward(maze, edgeId, nodeId));
@@ -228,62 +242,52 @@ function chooseOutgoing(
     return { edgeId: eid, t: e.a === nodeId ? 0 : 1, forward: e.a === nodeId };
   };
 
-  const straightish = (eid: number) =>
-    angleDiff(exitBearing(maze, eid, nodeId), arrivalBrg) <= 40;
-
-  if (!desired) {
-    let best = eids[0]!;
-    let bestDiff = Infinity;
-    for (const eid of eids) {
-      const d = angleDiff(exitBearing(maze, eid, nodeId), arrivalBrg);
-      if (d < bestDiff) {
-        bestDiff = d;
-        best = eid;
-      }
+  // Prefer the most straightforward continuation whenever possible.
+  let straightEid = eids[0]!;
+  let straightDiff = Infinity;
+  for (const eid of eids) {
+    const d = angleDiff(exitBearing(maze, eid, nodeId), arrivalBrg);
+    if (d < straightDiff) {
+      straightDiff = d;
+      straightEid = eid;
     }
-    return poseOn(best);
   }
+
+  if (!desired) return poseOn(straightEid);
 
   const want = desiredDirToBearing(desired);
-  // If the held key isn't aligned with continuing, bias against "go straight"
-  // so diagonal X-junctions can be taken with down/right (etc.).
-  const wantsTurn = angleDiff(arrivalBrg, want) > 28;
-  const straightPenalty = wantsTurn ? 45 : 0;
+  const straightBrg = exitBearing(maze, straightEid, nodeId);
+  const straightToWant = angleDiff(straightBrg, want);
 
-  type Cand = { eid: number; diff: number; reverse: boolean };
-  const cands: Cand[] = [];
-
-  for (const eid of eids) {
-    const brg = exitBearing(maze, eid, nodeId);
-    const penalty = straightish(eid) ? straightPenalty : 0;
-    cands.push({
-      eid,
-      diff: angleDiff(brg, want) + penalty,
-      reverse: false,
-    });
-  }
-
-  // U-turn back along the edge we arrived on
+  // U-turn only when the key clearly points backward.
   const reverseBrg = exitBearing(maze, fromEdgeId, nodeId);
-  cands.push({
-    eid: fromEdgeId,
-    diff: angleDiff(reverseBrg, want) + 12, // slight bias against accidental reverse
-    reverse: true,
-  });
-
-  cands.sort((a, b) => a.diff - b.diff);
-  const best = cands[0]!;
-
-  // Only reverse when that key clearly means "go back"
-  if (best.reverse) {
-    const second = cands.find((c) => !c.reverse);
-    if (second && best.diff + 8 >= second.diff) {
-      return poseOn(second.eid);
-    }
+  const reverseToWant = angleDiff(reverseBrg, want);
+  if (reverseToWant + 15 < straightToWant && angleDiff(arrivalBrg, want) >= 120) {
     return poseOn(fromEdgeId);
   }
 
-  return poseOn(best.eid);
+  // Side roads: only leave the straight path when the held key matches a
+  // turn clearly better than continuing (straight wins ties / close calls).
+  const STRAIGHT_BIAS = 18;
+  let bestTurn: number | null = null;
+  let bestTurnToWant = Infinity;
+  for (const eid of eids) {
+    if (eid === straightEid) continue;
+    const d = angleDiff(exitBearing(maze, eid, nodeId), want);
+    if (d < bestTurnToWant) {
+      bestTurnToWant = d;
+      bestTurn = eid;
+    }
+  }
+
+  if (
+    bestTurn != null &&
+    bestTurnToWant + STRAIGHT_BIAS < straightToWant
+  ) {
+    return poseOn(bestTurn);
+  }
+
+  return poseOn(straightEid);
 }
 
 export function actorsTouching(
